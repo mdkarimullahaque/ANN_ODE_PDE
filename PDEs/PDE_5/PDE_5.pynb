@@ -1,0 +1,147 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.optimize import minimize
+import time
+
+def sigmoid(a):
+    return (1 / (1 + np.exp(-a)))
+
+def deriv_sigmoid1(a):
+    return ((np.exp(-a)) / ((1 + np.exp(-a))**2))
+
+def deriv_sigmoid2(a):
+    return ((np.exp(-a) * (np.exp(-a) - 1)) / ((1 + np.exp(-a))**3))
+
+def nn(x, y, w_0, w_1, u, v):
+    z = np.dot(x, w_0) + np.dot(y, w_1) + u.T
+    z_sigmoid = 1 / (1 + np.exp(-z))
+    N = np.dot(v.T, z_sigmoid.T)
+
+    d_sigmoid = deriv_sigmoid1(z)
+    vw_1 = v * w_0.T
+    vw2_1 = v * (w_0**2).T
+    vw_2 = v * w_1.T
+    vw2_2 = v * (w_1**2).T
+
+    d2_sigmoid = deriv_sigmoid2(z)
+    dN_x = d_sigmoid @ vw_1
+    d2N_x = d2_sigmoid @ vw2_1
+    dN_y = d_sigmoid @ vw_2
+    d2N_y = d2_sigmoid @ vw2_2
+
+    grad2_x = ((1 - y) * np.exp(-x) * (x - 2)) + (np.exp(-x) * y * (x -1)) + (y * (1 - y) * ((-2 * N.T) + (2 - 4*x)* dN_x + (x * (1 - x) * d2N_x)))
+    grad2_y = ((6 * y)*(1-x+x*np.exp(-1)) + x * (1 - x) * (((-2 * N.T) + (2 - 4* y )* dN_y) + (y * (1 - y) * d2N_y)))
+    trial_soln = ((1 - x) * y**3) + (x * (1 + y**3) * np.exp(-1)) + ((1 - y) * (x * np.exp(-x) - x * np.exp(-1))) + (y * (np.exp(-x) * (x + 1) - (1 - x + (2 * x * np.exp(-1))))) + (x * (1 - x) * y * (1 - y) * N.T)
+
+    return z, N, grad2_x, grad2_y, trial_soln
+
+def loss(params, x, y):
+    w_0 = params[:n_hidden].reshape(1, n_hidden)
+    w_1 = params[n_hidden:n_input*n_hidden].reshape(1, n_hidden)
+    u = params[n_input*n_hidden:n_input*n_hidden+n_hidden].reshape(n_hidden, 1)
+    v = params[n_input*n_hidden+n_hidden:].reshape(n_hidden, n_output)
+
+    z, N, grad2_x, grad2_y, trial_soln = nn(x, y, w_0, w_1, u, v)
+    loss_value = np.sum((grad2_x + grad2_y - (np.exp(-x) * (x - 2 + y**3 + 6 * y)))**2)
+    return loss_value
+
+# Input values
+start = time.process_time()
+
+n_input = 2
+n_output = 1
+n_hidden = 10
+
+w = np.random.randn(n_input, n_hidden)
+v = np.random.randn(n_hidden, n_output)
+u = np.random.randn(n_hidden, 1)
+
+w_0 = w[0].reshape(1, n_hidden)
+w_1 = w[1].reshape(1, n_hidden)
+
+# Training set with 100 points (10x10 grid)
+x_train = np.linspace(0, 1, 10)
+y_train = np.linspace(0, 1, 10)
+X_train, Y_train = np.meshgrid(x_train, y_train)
+x_train = X_train.reshape(100, 1)
+y_train = Y_train.reshape(100, 1)
+
+# Testing set with 900 points (30x30 grid)
+x_test = np.linspace(0, 1, 30)
+y_test = np.linspace(0, 1, 30)
+X_test, Y_test = np.meshgrid(x_test, y_test)
+x_test = X_test.reshape(900, 1)
+y_test = Y_test.reshape(900, 1)
+
+params_init = np.concatenate([w_0.flatten(), w_1.flatten(), u.flatten(), v.flatten()])
+
+# Train the model on 100 points
+result = minimize(loss, params_init, args=(x_train, y_train), method='BFGS')
+optimized_params = result.x
+
+w_0_opt = optimized_params[:n_hidden].reshape(1, n_hidden)
+w_1_opt = optimized_params[n_hidden:n_input*n_hidden].reshape(1, n_hidden)
+u_opt = optimized_params[n_input*n_hidden:n_input*n_hidden+n_hidden].reshape(n_hidden, 1)
+v_opt = optimized_params[n_input*n_hidden+n_hidden:].reshape(n_hidden, n_output)
+
+# Evaluate on the training set
+_, _, _, _, trial_soln_train = nn(x_train, y_train, w_0_opt, w_1_opt, u_opt, v_opt)
+true_train = np.exp(-X_train) * (X_train + Y_train**3)
+trial_soln_train = trial_soln_train.reshape(10, 10)
+acc_train = np.abs(true_train - trial_soln_train)
+
+# Evaluate on the testing set
+_, _, _, _, trial_soln_test = nn(x_test, y_test, w_0_opt, w_1_opt, u_opt, v_opt)
+true_test = np.exp(-X_test) * (X_test + Y_test**3)
+trial_soln_test = trial_soln_test.reshape(30, 30)
+acc_test = np.abs(true_test - trial_soln_test)
+
+# Print maximum accuracy for training and testing sets
+print("Training set maximum accuracy:", np.max(acc_train))
+print("Testing set maximum accuracy:", np.max(acc_test))
+
+# Plotting exact and NN solutions for training set
+fig = plt.figure()
+ax = fig.add_subplot(projection='3d')
+ax.scatter3D(X_train, Y_train, true_train, color='black', label='Exact Solution', s=8)
+ax.plot_wireframe(X_train, Y_train, trial_soln_train, color='red', label='NN Solution', linewidth=0.8)
+ax.set_xlabel('x')
+ax.set_ylabel('y')
+ax.set_zlabel('Solution')
+plt.title("Comparison between NN solution and Exact solution at the training points")
+plt.savefig("Training_Solution.png", dpi=200)
+plt.show()
+
+# Plotting accuracy for training set
+fig = plt.figure()
+ax = fig.add_subplot(projection='3d')
+ax.plot_wireframe(X_train, Y_train, acc_train, color='blue', label='Solution Accuracy', linewidth=1)
+ax.set_xlabel('x')
+ax.set_ylabel('y')
+ax.set_zlabel('Accuracy')
+plt.title("Accuracy of the computed solution at the training points")
+plt.savefig("output5.2.png", dpi=200)
+plt.show()
+
+# Plotting exact and NN solutions for testing set
+fig = plt.figure()
+ax = fig.add_subplot(projection='3d')
+ax.scatter3D(X_test, Y_test, true_test, color='black', label='Exact Solution', s=8)
+ax.plot_wireframe(X_test, Y_test, trial_soln_test, color='red', label='NN Solution', linewidth=0.8)
+ax.set_xlabel('x')
+ax.set_ylabel('y')
+ax.set_zlabel('Solution')
+plt.title("Comparison between NN solution and Exact solution at the test points")
+plt.savefig("output5.1.png", dpi=200)
+plt.show()
+
+# Plotting accuracy for testing set
+fig = plt.figure()
+ax = fig.add_subplot(projection='3d')
+ax.plot_wireframe(X_test, Y_test, acc_test, color='blue', label='Solution Accuracy', linewidth=1)
+ax.set_xlabel('x')
+ax.set_ylabel('y')
+ax.set_zlabel('Accuracy')
+plt.title("Accuracy of the computed solution at the test points")
+plt.savefig("output5.3.png", dpi=200)
+plt.show()
