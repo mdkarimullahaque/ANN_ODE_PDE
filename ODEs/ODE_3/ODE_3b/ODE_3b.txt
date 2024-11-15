@@ -1,0 +1,9 @@
+Boundary Value Problem
+
+Problem 3: Given the differential equation
+$\frac{d^2\Psi}{dx^2} +\frac{1}{5}\frac{d\Psi}{dx}+\Psi=-\frac{1}{5}e^{\frac{-x}{5}} cos(x)$
+with $\Psi(0)=0,\:\: \Psi(1)=sin(1)e^{-(\frac{1}{5})}$ and $x \in [0,1]$.
+
+The analytical solution is  $\:\: \Psi(x)= e^{-(\frac{x}{5})} sin(x)$
+
+The trial solution is:   $\;\; \Psi_t(x)=xsin(1)e^{-(\frac{1}{5})}+x(1-x)N(x,\vec{p})$
