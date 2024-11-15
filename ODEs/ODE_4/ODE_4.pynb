@@ -1,0 +1,115 @@
+#import libraries
+import numpy as np  #for mathematical terms
+import matplotlib.pyplot as plt  #for plot the graphs
+from scipy.optimize import minimize  #for minimized the error function
+from scipy.special import expit #for sigmoid function
+import time  #for measure time
+def sigmoid(inputs):
+  # Define sigmoid/logistic function
+  return expit(inputs)
+
+def first_derivative_sigmoid(inputs):
+    # Compute the 1st derivative of sigmoid/logistic function: f'(x) = f(x) * (1 - f(x))
+    return sigmoid(inputs) * (1- sigmoid(inputs))
+  def nn(x_train, w_1, w_2, b_1, b_2, v_1, v_2):
+  z1 = np.dot(x_train, w_1) + b_1.T   # size(w_1)= n_input * n_hidden, size(b_1)= n_hidden * 1, size(z1)= n_input * n_hidden
+  N1 = np.dot(v_1.T, sigmoid(z1).T)  # Here size(N1)= 1 * 1, size(v_1)= n_hidden * n_output
+
+  z2 = np.dot(x_train, w_2) + b_2.T   # size(w_2)= n_input * n_hidden, size(b_2)= n_hidden * 1, size(z2)= n_input * n_hidden
+  N2 = np.dot(v_2.T, sigmoid(z2).T)   # Here size(N2)= 1 * 1, size(v_2)= n_hidden * n_output
+
+  vw1 = v_1 * w_1.T  # size(vw1)= n_hidden * 1
+  dN1_dx = first_derivative_sigmoid(z1) @ vw1  # size(dN1_dx)= n_input * 1
+  grad1_x = N1.T + x_train * dN1_dx     # size(grad1_x)= 1 * 1
+  trial_soln1 = x_train * N1.T     # size(trial_soln1) = 1 * 1
+
+  vw2 = v_2 * w_2.T    # size(vw2)= n_hidden * 1
+  dN2_dx = first_derivative_sigmoid(z2) @ vw2  # size(dN2_dx)= n_input * 1
+  grad2_x = N2.T + x_train * dN2_dx    # size(grad2_x)= 1 * 1
+  trial_soln2 = 1 + x_train * N2.T    # size(trial_soln2) = 1 * 1
+
+  return z1, z2, N1, N2, grad1_x, grad2_x, trial_soln1, trial_soln2
+def loss(params, x_train):
+
+    w_1 = params[:n_hidden].reshape(1, n_hidden)
+    w_2 = params[n_hidden:2*n_input*n_hidden].reshape(1, n_hidden)
+    b_1 = params[2*n_input*n_hidden:2*n_input*n_hidden+n_hidden].reshape(n_hidden, 1)
+    b_2 = params[2*n_input*n_hidden+n_hidden:2*n_input*n_hidden+2*n_hidden].reshape(n_hidden, 1)
+    v_1 = params[2*n_input*n_hidden+2*n_hidden:3*n_input*n_hidden+2*n_hidden].reshape(n_hidden, n_output)
+    v_2 = params[3*n_input*n_hidden+2*n_hidden:].reshape(n_hidden, n_output)
+
+    z1, z2, N1, N2, grad1_x, grad2_x, trial_soln1, trial_soln2 = nn(x_train, w_1, w_2, b_1, b_2, v_1, v_2)
+    loss1 = np.sum((grad1_x - np.cos(x_train) - trial_soln1**2 - trial_soln2 + (1 + (x_train**2) + (np.sin(x_train))**2))**2+(grad2_x - (2 * x_train) + ((1 + x_train**2) * np.sin(x_train)) - (trial_soln1 * trial_soln2))**2)    # mean squared error function
+    # loss2 = np.sum((grad2_x - (2 * x_train) + ((1 + x_train**2) * np.sin(x_train)) - (trial_soln1 * trial_soln2))**2)   # mean squared error function
+    loss_value = (loss1)
+    return loss_value
+  
+n_input=1  # number of input node
+n_output=1  # number of output node
+n_hidden=10  # number of hidden nodes
+
+w_1 = np.random.randn(n_input, n_hidden)
+v_1 = np.random.randn(n_hidden, n_output)
+b_1 = np.random.randn(n_hidden, 1)
+
+w_2 = np.random.randn(n_input, n_hidden)
+v_2 = np.random.randn(n_hidden, n_output)
+b_2 = np.random.randn(n_hidden, 1)
+
+x_train=np.linspace(0,3,10).reshape(10,1)   # training data
+# Define minimize function to minimized mean squared error
+start=time.time()
+p_initial=np.concatenate([w_1.flatten(), w_2.flatten(), b_1.flatten(), b_2.flatten(), v_1.flatten(), v_2.flatten()])
+
+result=minimize(loss,p_initial,args=(x_train), method="BFGS")
+optimized_p=result.x
+
+w_1_opt = optimized_p[:n_hidden].reshape(1, n_hidden)
+w_2_opt = optimized_p[n_hidden:2*n_input*n_hidden].reshape(1, n_hidden)
+b_1_opt = optimized_p[2*n_input*n_hidden:2*n_input*n_hidden+n_hidden].reshape(n_hidden, 1)
+b_2_opt = optimized_p[2*n_input*n_hidden+n_hidden:2*n_input*n_hidden+2*n_hidden].reshape(n_hidden, 1)
+v_1_opt = optimized_p[2*n_input*n_hidden+2*n_hidden:3*n_input*n_hidden+2*n_hidden].reshape(n_hidden, n_output)
+v_2_opt = optimized_p[3*n_input*n_hidden+2*n_hidden:].reshape(n_hidden, n_output)
+end=time.time()
+print("Time taken:",end-start)
+x_test=np.linspace(0,3,20).reshape(20,1)   # test data
+
+z1, z2, N1, N2, grad1_x, grad2_x, test_soln1, test_soln2 = nn(x_test, w_1_opt, w_2_opt, b_1_opt, b_2_opt, v_1_opt, v_2_opt)
+exact_soln1=np.sin(x_test)   # exact solution of ode1
+exact_soln2=1 + x_test**2   # exact solution of ode2
+# plot for Comparison between NN test solution and Exact solution
+plt.scatter(x_test, exact_soln1, color = 'green', label = 'Exact solution1',s=10)
+plt.plot(x_test, test_soln1, "k-",label = 'NN solution1',linewidth=1)
+plt.scatter(x_test, exact_soln2, color = 'blue', label = 'Exact solution2',s=10)
+plt.plot(x_test, test_soln2,"r-", label = 'NN solution2',linewidth=1)
+plt.grid()
+plt.title("Comparison between NN solution and Exact solution")
+plt.xlabel('x')
+plt.ylabel('Solution')
+plt.legend()
+plt.show()
+fig = plt.figure(figsize=(16, 8))
+# plot of absolute error
+acc1 = test_soln1 - exact_soln1
+acc2 = test_soln2 - exact_soln2
+
+ax1 = fig.add_subplot(121)
+ax1.plot(x_test, acc1,"k-", label = 'Solution Accuracy 1', marker = 'o',markersize=4,mec="green",linewidth=1)
+ax1.plot(x_test, acc2,"r-", label = 'Solution Accuracy 2', marker = 'D',markersize=4,mec="green",linewidth=1)
+ax1.set_xlabel("x")
+ax1.set_ylabel("Solution Accuracy")
+ax1.grid()
+ax1.legend()
+
+acc1 = np.log(np.abs(test_soln1 - exact_soln1))
+acc2 = np.log(np.abs(test_soln2 - exact_soln2))
+
+ax2 = fig.add_subplot(122)
+ax2.plot(x_test, acc1,"k-", label = "log (Absolute of Solution 1 Accuracy)", marker = 'o',markersize=4,mec="green",linewidth=1)
+ax2.plot(x_test, acc2,"r-", label = "log (Absolute of Solution 2 Accuracy)", marker = 'D',markersize=4,mec="green",linewidth=1)
+ax2.set_xlabel('x')
+ax2.set_ylabel("log (Absolute of Solution Accuracy)")
+ax2.grid()
+ax2.legend()
+
+plt.show()
