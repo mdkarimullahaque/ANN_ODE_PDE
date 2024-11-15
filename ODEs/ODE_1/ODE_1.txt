@@ -1,0 +1,7 @@
+Problem 1: Solve the Single Ordinary Differential Equation
+$\frac{d\Psi}{dx}+\left({x+\frac{1+3x^2}{1+x+x^3}}\right)\Psi=x^3+2x+x^2{\frac{1+3x^2}{1+x+x^3}}$
+with  $\Psi(0)=1$ and $x \in [0,1]$.
+
+The analytical solution is  $\Psi_a(x)=\frac{e^{\frac{−x^2}{2}}}{1+x+x^3}+x^2$ 
+
+The trial solution is  $\Psi_t(x)=1+xN(x,\vec{p})$
