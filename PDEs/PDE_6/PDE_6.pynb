@@ -1,0 +1,177 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.optimize import minimize
+import time
+
+def sigmoid(a):
+    return (1 / (1 + np.exp(-a)))
+
+def deriv_sigmoid1(a):
+    return ((np.exp(-a)) / ((1 + np.exp(-a))**2))
+
+def deriv_sigmoid2(a):
+    return ((np.exp(-a) * (np.exp(-a) - 1)) / ((1 + np.exp(-a))**3))
+
+def deriv_sigmoid3(a):
+    return ((np.exp(-a) * (1 - 4 * np.exp(-a) + np.exp(-2*a))) / ((1 + np.exp(-a))**4))
+
+def nn(x, y, y_ones, w_0, w_1, u, v):
+    z = np.dot(x, w_0) + np.dot(y, w_1) + u.T
+    z_sigmoid = sigmoid(z)
+    N = np.dot(v.T, z_sigmoid.T)
+
+    z1 = np.dot(x, w_0) + np.dot(y_ones, w_1) + u.T
+    z1_sigmoid = sigmoid(z1)
+    N1 = np.dot(v.T, z1_sigmoid.T)
+
+    d_sigmoid = deriv_sigmoid1(z)
+    d_sigmoid_1 = deriv_sigmoid1(z1)
+    vw_1 = v * w_0.T
+    vw2_1 = v * (w_0**2).T
+    vw_2 = v * w_1.T
+    vw2_2 = v * (w_1**2).T
+    d2_sigmoid = deriv_sigmoid2(z)
+    d2_sigmoid_1 = deriv_sigmoid2(z1)
+
+    dN_x = d_sigmoid @ vw_1
+    d2N_x = d2_sigmoid @ vw2_1
+    dN_y = d_sigmoid @ vw_2
+    d2N_y = d2_sigmoid @ vw2_2
+
+    dN1_x = d_sigmoid_1 @ vw_1
+    dN1_y = d_sigmoid_1 @ vw_2
+    d2N1_x = d2_sigmoid_1 @ vw2_1
+    d2N1 = vw_2 * w_0.T
+    d2N1_xy = d2_sigmoid_1 @ d2N1
+
+    d3_sigmoid_1 = deriv_sigmoid3(z1)
+    d3N1 = vw2_1 * w_1.T
+    d3N1_xxy = d3_sigmoid_1 @ d3N1
+
+    grad_y = (2 * np.sin(x * np.pi)) + (x * (1 - x) * (N.T - N1.T - dN1_y + y*dN_y))
+    grad2_x = (-2 * (np.pi)**2 * y * np.sin(np.pi * x)) + (y * ((-2 * (N.T - N1.T - dN1_y)) + (2 * (1 - 2 * x) * (dN_x - dN1_x - d2N1_xy)) + (x * (1 - x) * (d2N_x - d2N1_x - d3N1_xxy))))
+    grad2_y = x * (1 - x) * ((2 * dN_y) + (y * d2N_y))
+    trial_soln = (2 * y * np.sin(np.pi * x)) + (x * (1 - x) * y * (N.T - N1.T - dN1_y))
+
+    return z, z1, N, N1, grad_y, grad2_x, grad2_y, trial_soln, dN1_y
+
+def loss(params, x, y):
+    w_0 = params[:n_hidden].reshape(1, n_hidden)
+    w_1 = params[n_hidden:n_input*n_hidden].reshape(1, n_hidden)
+    u = params[n_input*n_hidden:n_input*n_hidden+n_hidden].reshape(n_hidden, 1)
+    v = params[n_input*n_hidden+n_hidden:].reshape(n_hidden, n_output)
+
+    z, z1, N, N1, grad_y, grad2_x, grad2_y, trial_soln, dN1_y = nn(x, y, y_ones, w_0, w_1, u, v)
+    loss_value = np.sum((grad2_x + grad2_y - (2 - (np.pi**2) * (y**2)) * np.sin(np.pi * x))**2)
+    return loss_value
+
+start = time.time()
+n_input = 2
+n_output = 1
+n_hidden = 10
+grid_pnts = 100
+
+w = np.random.randn(n_input, n_hidden)
+v = np.random.randn(n_hidden, n_output)
+u = np.random.randn(n_hidden, 1)
+
+# Training points
+x_train = np.linspace(0, 1, 10)
+y_train = np.linspace(0, 1, 10)
+X_train, Y_train = np.meshgrid(x_train, y_train)
+x_train = X_train.reshape(100, 1)
+y_train = Y_train.reshape(100, 1)
+y_ones = np.ones(grid_pnts).reshape(grid_pnts, 1)
+
+params_init = np.concatenate([w[0].flatten(), w[1].flatten(), u.flatten(), v.flatten()])
+result = minimize(loss, params_init, args=(x_train, y_train), method='BFGS')
+optimized_params = result.x
+
+w_0_opt = optimized_params[:n_hidden].reshape(1, n_hidden)
+w_1_opt = optimized_params[n_hidden:n_input*n_hidden].reshape(1, n_hidden)
+u_opt = optimized_params[n_input*n_hidden:n_input*n_hidden+n_hidden].reshape(n_hidden, 1)
+v_opt = optimized_params[n_input*n_hidden+n_hidden:].reshape(n_hidden, n_output)
+
+# Evaluate on the training set
+_, _, _, _, _, _, _, trial_soln_train, _ = nn(x_train, y_train, y_ones, w_0_opt, w_1_opt, u_opt, v_opt)
+trial_soln_train = trial_soln_train.reshape(10, 10)
+true_train = Y_train**2 * np.sin(np.pi * X_train)
+accuracy_train = trial_soln_train - true_train
+
+# Testing points
+x_test = np.linspace(0, 1, 30)
+y_test = np.linspace(0, 1, 30)
+X_test, Y_test = np.meshgrid(x_test, y_test)
+x_test = X_test.reshape(900, 1)
+y_test = Y_test.reshape(900, 1)
+
+# Evaluate on the testing set
+y_ones_test = np.ones(900).reshape(900, 1)
+_, _, _, _, _, _, _, trial_soln_test, _ = nn(x_test, y_test, y_ones_test, w_0_opt, w_1_opt, u_opt, v_opt)
+trial_soln_test = trial_soln_test.reshape(30, 30)
+true_test = Y_test**2 * np.sin(np.pi * X_test)
+accuracy_test = trial_soln_test - true_test
+
+# Plot training results
+fig = plt.figure()
+ax = fig.add_subplot(projection='3d')
+ax.scatter3D(X_train, Y_train, true_train, color='black', s=8, label='Exact Solution')
+ax.plot_wireframe(X_train, Y_train, trial_soln_train, color='red', linewidth=0.8, label='NN Solution')
+ax.set_title('Comparison between NN solution and Exact solution at the training points')
+ax.set_xlabel('x')
+ax.set_ylabel('y')
+ax.set_zlabel('f')
+plt.legend()
+plt.show()
+
+# Training accuracy plot
+fig = plt.figure()
+ax = fig.add_subplot(projection='3d')
+ax.plot_wireframe(X_train, Y_train, accuracy_train, color='blue', linewidth=1, label='Training Error')
+ax.set_xlabel('x')
+ax.set_ylabel('y')
+ax.set_zlabel('Accuracy')
+plt.title("Accuracy of the computed solution at the training points")
+plt.savefig("output6.2.png", dpi=200)
+plt.show()
+#ax.set_title('Training Accuracy Plot')
+#ax.set_xlabel('x')
+#ax.set_ylabel('y')
+#ax.set_zlabel('Error')
+#plt.legend()
+plt.show()
+
+# Plot testing results
+fig = plt.figure()
+ax = fig.add_subplot(projection='3d')
+ax.scatter3D(X_test, Y_test, true_test, color='black', s=8, label='Exact Solution')
+ax.plot_wireframe(X_test, Y_test, trial_soln_test, color='red', linewidth=0.8, label='NN Solution')
+ax.set_xlabel('x')
+ax.set_ylabel('y')
+ax.set_zlabel('Solution')
+plt.title("Comparison between NN solution and Exact solution at the test points")
+plt.savefig("output6.1.png", dpi=200)
+plt.show()
+#ax.set_title('Testing Solution Comparison')
+#ax.set_xlabel('x')
+#ax.set_ylabel('y')
+#ax.set_zlabel('f')
+plt.legend()
+#plt.show()
+
+# Testing accuracy plot
+fig = plt.figure()
+ax = fig.add_subplot(projection='3d')
+ax.plot_wireframe(X_test, Y_test, accuracy_test, color='blue', linewidth=1, label='Testing Error')
+ax.set_xlabel('x')
+ax.set_ylabel('y')
+ax.set_zlabel('Accuracy')
+plt.title("Accuracy of the computed solution at the test points")
+plt.savefig("output6.3.png", dpi=200)
+plt.show()
+#ax.set_title('Testing Accuracy Plot')
+#ax.set_xlabel('x')
+#ax.set_ylabel('y')
+#ax.set_zlabel('Error')
+#plt.legend()
+#plt.show()
