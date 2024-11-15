@@ -1,0 +1,9 @@
+Initial Value Problem
+
+Problem 3: Given the differential equation
+$\frac{d^2\Psi}{dx^2} +\frac{1}{5}\frac{d\Psi}{dx}+\Psi=-\frac{1}{5}e^{\frac{-x}{5}} cos(x)$
+with $\Psi(0)=0,\:\: \left(\frac{d}{dx}\right)\Psi(0)=1$ and $x \in [0,2]$.
+
+The analytical solution is  $\:\:\Psi(x)=e^{-(\frac{x}{5})} sin(x)$
+
+The trial solution is  $\Psi_t(x)= x+x^2N(x,\vec{p})$
