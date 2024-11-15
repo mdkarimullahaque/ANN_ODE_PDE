@@ -1,0 +1,8 @@
+Problem 4: Consider the system of two coupled first order Ordinary Differential Equations
+$\frac{d\Psi_{1}}{dx}=cos(x)+\Psi_{1}^2+\Psi_{2}-(1+x^2+sin^2(x))$
+$\frac{d\Psi_{2}}{dx}=2x-(1+x^2)sin(x)+\Psi_{1}\Psi_{2}$
+with $\Psi_{1}(0)=0,\:\: \Psi_{2}(0)=1$ and $x \in [0,3]$.
+
+The analytical solutions are  $\:\: \Psi_{a_1}(x)= sin(x),\:\:\:\Psi_{a_2}(x)=1+x^2$
+
+The trial solutions are $\;\; \Psi_{t_1}({x})=xN_{1}(x,\vec{p_{1}}),\;\;\; \Psi_{t_2}({x})=1+xN_{2}(x,\vec{p_{2}})$
