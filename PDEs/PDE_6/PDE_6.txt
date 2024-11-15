@@ -1,0 +1,7 @@
+Problem 6: Solve the Partial Differential Equation $\nabla^2{\Psi(x,y)}=(2-\pi^2 y^2)sin(\pi x)$ 
+
+i.e., $\frac{\partial^2 \Psi}{\partial x^2}+\frac{\partial^2 \Psi}{\partial y^2}=(2-\pi^2 y^2)sin(\pi x)$ with $x,y \in [0,1]$ and with mixed boundary conditions $ \Psi(0,y)=0,\: \Psi(1,y)=0,\: \Psi(x,0)=0,\:\frac{\partial }{\partial y}\Psi(x,1)=2sin(\pi x)$
+
+The analytic solution is $\Psi_a(x,y)=y^2sin(\pi x)$
+
+The trial solution is $\Psi_t(x,y)= A(x,y)+x(1-x)y\left[N(x,y,\vec{p})-N(x,1,\vec{p})-\frac{\partial {N(x,1,\vec{p}})}{\partial{y}}\right]$
