@@ -1,0 +1,7 @@
+Problem 5: Solve the Partial Differential Equation $\nabla^2{\Psi(x,y)}=e^{-x}(x-2+y^3+6y)$
+ 
+i.e., $\frac{\partial^2 \Psi}{\partial x^2}+\frac{\partial^2 \Psi}{\partial y^2}=e^{-x}(x-2+y^3+6y)$ with $x,y \in [0,1]$ and with Dirichlet boundary conditions $\Psi(0,y)=y^3,\:\:\Psi(1,y)=\frac{(1+y^3)}{e},\:\: \Psi(x,0)=xe^{-x},\:\Psi(x,1)=e^{-x}(1+x)$
+
+The analytical solution is  $ \Psi_a(x,y)= e^{-x}(x+y^3)$
+
+The trial solution is  $\Psi_t(x,y) = A(x,y)+x(1-x)y(1-y)N(x,y,\vec{p})$
