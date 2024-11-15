@@ -1,0 +1,6 @@
+Problem 2: Solve the Single Ordinary Differential Equation  $\frac{d\Psi}{dx}+\frac{1}{5}\Psi=e^{-(\frac{x}{5})}cos(x)$ 
+with  $\Psi(0)=0$ and $x \in [0,2]$.
+
+The analytical solution is  $\Psi_a(x)=e^{-(\frac{x}{5})}sin(x)$ 
+
+The trial solution is $\Psi_t(x)=xN(x,\vec{p})$
