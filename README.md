@@ -8,7 +8,7 @@ This repository contains the implementation of the paper **“Artificial Neural 
 - **`yDE_z.pynb`**: Jupyter Notebook with the implementation of the corresponding problem.
 
 ### Naming Convention
-- **`x`**:
+- **`y`**:
   - `O` for Ordinary Differential Equations (ODEs).
   - `P` for Partial Differential Equations (PDEs).
 - **`z`**:  
